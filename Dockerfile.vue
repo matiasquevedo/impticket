@@ -19,7 +19,7 @@ COPY . .
 
 # Generamos la versión de producción.
 # Esto crea la carpeta /app/dist.
-RUN npm run build
+RUN npm run build-only
 
 
 # ==================================================
