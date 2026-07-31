@@ -1,0 +1,8 @@
+@import './base.css';
+@import "tailwindcss";
+
+
+.preview{
+	width: 285px;
+	padding: 6mm;
+}

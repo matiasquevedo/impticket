@@ -1,0 +1,47 @@
+:root {
+  /* 🍃 Paleta Naturaleza y Calma (No tan oscura, tonos tierra y musgo) */
+  --bg-primary: #fafaf9;     /* Verde musgo muy profundo (Lienzo) */
+  --bg-secondary: #1e2824;  /* Verde bosque suave (Tarjetas y Widgets flotantes) */
+  --bg-tertiary: #2a3832;   /* Elementos interactivos hover / Inputs */
+
+  /* 🎨 Acentos del Sistema orgánicos */
+  --accent-focus: #52b788;  /* Verde menta/salvia: Enfoque tranquilo y natural */
+  --accent-rest: #e07a5f;   /* Terracota/Arcilla: Descanso cálido */
+  --accent-success: #74c69d;/* Tarea completada */
+
+  --text-primary: #272822;  /* Blanco menta suave (no encandila) */
+  --text-secondary: #9db4a9; /* Gris verdoso para textos secundarios */
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  
+  /* Transiciones fluidas de UI */
+  transition: color 0.3s ease, background-color 0.3s ease;
+  line-height: 1.6;
+  
+  /* 📌 Tipografía grande y limpia */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px; 
+  
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 🌀 Scrollbars redondeados estilo "hoja" */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--bg-tertiary);
+  border-radius: 99px;
+}
