@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
     # Nginx escucha internamente en el puerto 80.
-    expose:
+    ports:
       - "3535:80"
 
     depends_on:
