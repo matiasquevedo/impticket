@@ -38,7 +38,7 @@ services:
 
     # Nginx escucha internamente en el puerto 80.
     expose:
-      - "80"
+      - "3535:80"
 
     depends_on:
       - pocketbase_imp
