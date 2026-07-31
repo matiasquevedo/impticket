@@ -1,52 +1,170 @@
 services:
 
-  # ================================================
-  # BACKEND: PocketBase
-  # ================================================
+# ================================================
 
-  pocketbase_imp:
-    build:
-      context: .
-      dockerfile: Dockerfile.pb
+# BACKEND: PocketBase
 
-    restart: unless-stopped
+# ================================================
 
-    # El puerto queda disponible únicamente dentro
-    # de la red interna de Docker/Coolify.
-    expose:
-      - "8080"
+pocketbase_imp:
+build:
+context: .
+dockerfile: Dockerfile.pb
 
-    # Volumen persistente para no perder:
-    # - usuarios
-    # - colecciones
-    # - registros
-    # - archivos subidos
-    volumes:
-      - pocketbase_data:/pb/pb_data
+```
+restart: unless-stopped
 
+# PocketBase queda disponible únicamente dentro
+# de la red interna de Docker.
+expose:
+  - "8080"
 
-  # ================================================
-  # FRONTEND: Vue + Vite compilado + Nginx
-  # ================================================
+# Volumen persistente para conservar:
+# - usuarios
+# - colecciones
+# - registros
+# - archivos subidos
+volumes:
+  - pocketbase_data:/pb/pb_data
+```
 
-  imp:
-    build:
-      context: .
-      dockerfile: Dockerfile.vue
+# ================================================
 
-    restart: unless-stopped
+# FRONTEND: Vue compilado + Nginx
 
-    # Nginx escucha internamente en el puerto 80.
-    ports:
-      - "3535:80"
+# ================================================
 
-    depends_on:
-      - pocketbase_imp
+imp:
+build:
+context: .
+dockerfile: Dockerfile.vue
 
+```
+restart: unless-stopped
+
+# Acceso desde la red local:
+# http://IP_DEL_SERVIDOR:3535
+ports:
+  - "3535:80"
+
+depends_on:
+  - pocketbase_imp
+```
+
+# ================================================
+
+# PROXY CORS PARA MERCADO PAGO
+
+# ================================================
+
+cors_proxy:
+image: node:18-alpine
+
+```
+restart: unless-stopped
+
+command: >
+  node -e "
+  const http = require('http');
+  const https = require('https');
+
+  http.createServer((req, res) => {
+    // Habilitar CORS.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, OPTIONS, PUT, PATCH, DELETE'
+    );
+    res.setHeader('Access-Control-Allow-Headers', '*');
+
+    // Responder las solicitudes preflight.
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    // Obtenemos la URL solicitada.
+    let targetUrl = req.url;
+
+    // Caso:
+    // /https:/api.mercadopago.com/...
+    if (
+      targetUrl.startsWith('/https:/') &&
+      !targetUrl.startsWith('/https://')
+    ) {
+      targetUrl = 'https://' + targetUrl.substring(8);
+
+    // Caso:
+    // /https://api.mercadopago.com/...
+    } else if (targetUrl.startsWith('/http')) {
+      targetUrl = targetUrl.substring(1);
+
+    // Si llega una ruta relativa, usamos Mercado Pago.
+    } else if (!targetUrl.startsWith('http')) {
+      targetUrl = 'https://api.mercadopago.com' + req.url;
+    }
+
+    // Elegimos el módulo correcto según el protocolo.
+    const client = targetUrl.startsWith('https://')
+      ? https
+      : http;
+
+    const proxyReq = client.request(
+      targetUrl,
+      {
+        method: req.method,
+        headers: {
+          ...req.headers,
+          host: 'api.mercadopago.com'
+        }
+      },
+      (proxyRes) => {
+        res.writeHead(
+          proxyRes.statusCode,
+          proxyRes.headers
+        );
+
+        proxyRes.pipe(res);
+      }
+    );
+
+    // Manejo de errores.
+    proxyReq.on('error', (err) => {
+      console.error(
+        'Error en proxy:',
+        err.message
+      );
+
+      res.writeHead(500);
+      res.end(err.message);
+    });
+
+    // Enviamos el cuerpo de la solicitud.
+    req.pipe(proxyReq);
+
+  }).listen(
+    8080,
+    '0.0.0.0',
+    () => {
+      console.log(
+        'Proxy CORS corriendo en puerto 8080'
+      );
+    }
+  );
+  "
+
+# Acceso desde la red local:
+# http://IP_DEL_SERVIDOR:8080
+ports:
+  - "8080:8080"
+```
 
 # ==================================================
+
 # VOLÚMENES PERSISTENTES
+
 # ==================================================
 
 volumes:
-  pocketbase_data:
+pocketbase_data:
