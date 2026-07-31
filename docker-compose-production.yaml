@@ -1,101 +1,52 @@
 services:
-  # Backend: pocketbase_imp
+
+  # ================================================
+  # BACKEND: PocketBase
+  # ================================================
+
   pocketbase_imp:
     build:
       context: .
       dockerfile: Dockerfile.pb
-    container_name: pocketbase_imp
-    restart: unless-stopped
-    ports:
-      - "6767:8080"
-    volumes:
-      - ./pb_data:/pb/pb_data # Vital para no perder tus usuarios/colecciones
 
-  # Frontend: VueJS (Vite)
+    restart: unless-stopped
+
+    # El puerto queda disponible únicamente dentro
+    # de la red interna de Docker/Coolify.
+    expose:
+      - "8080"
+
+    # Volumen persistente para no perder:
+    # - usuarios
+    # - colecciones
+    # - registros
+    # - archivos subidos
+    volumes:
+      - pocketbase_data:/pb/pb_data
+
+
+  # ================================================
+  # FRONTEND: Vue + Vite compilado + Nginx
+  # ================================================
+
   imp:
     build:
       context: .
       dockerfile: Dockerfile.vue
-    container_name: imp
+
     restart: unless-stopped
-    ports:
-      - "3535:5173"
-    volumes:
-      - .:/app
-      - /app/node_modules # Evita que se sobrescriban los módulos del contenedor con los locales
+
+    # Nginx escucha internamente en el puerto 80.
+    expose:
+      - "80"
+
     depends_on:
       - pocketbase_imp
 
-  # Proxy CORS para desarrollo local (sin tocar PocketBase)
-  # Proxy CORS para desarrollo local (sin tocar PocketBase)
-  cors_proxy:
-    image: node:18-alpine
-    container_name: cors_proxy
-    restart: unless-stopped
-    # Script nativo corregido: usando manipulación de strings simple para evitar fallos de sintaxis
-    command: >
-      node -e "
-      const http = require('http');
-      const https = require('https');
-      
-      http.createServer((req, res) => {
-        // Habilitar CORS para cualquier origen y cabecera en desarrollo
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-        
-        if (req.method === 'OPTIONS') {
-          res.writeHead(204);
-          res.end();
-          return;
-        }
 
-        // Limpiamos la barra inicial duplicada si Axios la manda (/https://...)
-        let targetUrl = req.url;
-        if (targetUrl.startsWith('/https:/') && !targetUrl.startsWith('/https://')) {
-          // Caso raro de colapso de barras: /https:/api... -> https://api...
-          targetUrl = 'https://' + targetUrl.substring(8);
-        } else if (targetUrl.startsWith('/http')) {
-          // Caso normal: /https://api... -> https://api...
-          targetUrl = targetUrl.substring(1);
-        } else if (!targetUrl.startsWith('http')) {
-          // Fallback por si la ruta viene relativa sin el host
-          targetUrl = 'https://api.mercadopago.com' + req.url;
-        }
-        
-        const proxyReq = https.request(targetUrl, {
-          method: req.method,
-          headers: {
-            ...req.headers,
-            host: 'api.mercadopago.com' // Forzar host correcto para evitar rechazos SSL
-          }
-        }, (proxyRes) => {
-          res.writeHead(proxyRes.statusCode, proxyRes.headers);
-          proxyRes.pipe(res);
-        });
+# ==================================================
+# VOLÚMENES PERSISTENTES
+# ==================================================
 
-        proxyReq.on('error', (err) => {
-          console.error('Error en proxy:', err.message);
-          res.writeHead(500);
-          res.end(err.message);
-        });
-
-        req.pipe(proxyReq);
-      }).listen(8080, '0.0.0.0', () => console.log('Proxy CORS nativo corriendo en puerto 8080'));
-      "
-    ports:
-      - "8080:8080"
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    command: http imp:5173
-    environment:
-      - NGROK_AUTHTOKEN=3DHE0Bm7YqbJvFLN79BmeHtuiXc_3CLQA5jncHRrdJKa4Aks5
-    depends_on:
-      - imp
-    ports:
-      - "4040:4040"
-
-networks:
-  imp_net:
-    external: false
+volumes:
+  pocketbase_data:
