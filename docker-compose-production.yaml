@@ -1,170 +1,104 @@
 services:
+  pocketbase_imp:
+    build:
+      context: .
+      dockerfile: Dockerfile.pb
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - pocketbase_data:/pb/pb_data
 
-# ================================================
+  imp:
+    build:
+      context: .
+      dockerfile: Dockerfile.vue
+    restart: unless-stopped
+    ports:
+      - "3535:80"
+    depends_on:
+      - pocketbase_imp
 
-# BACKEND: PocketBase
+  cors_proxy:
+    image: node:18-alpine
+    restart: unless-stopped
+    command: >
+      node -e "
+      const http = require('http');
+      const https = require('https');
 
-# ================================================
+      http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET, POST, OPTIONS, PUT, PATCH, DELETE'
+        );
+        res.setHeader('Access-Control-Allow-Headers', '*');
 
-pocketbase_imp:
-build:
-context: .
-dockerfile: Dockerfile.pb
-
-```
-restart: unless-stopped
-
-# PocketBase queda disponible únicamente dentro
-# de la red interna de Docker.
-expose:
-  - "8080"
-
-# Volumen persistente para conservar:
-# - usuarios
-# - colecciones
-# - registros
-# - archivos subidos
-volumes:
-  - pocketbase_data:/pb/pb_data
-```
-
-# ================================================
-
-# FRONTEND: Vue compilado + Nginx
-
-# ================================================
-
-imp:
-build:
-context: .
-dockerfile: Dockerfile.vue
-
-```
-restart: unless-stopped
-
-# Acceso desde la red local:
-# http://IP_DEL_SERVIDOR:3535
-ports:
-  - "3535:80"
-
-depends_on:
-  - pocketbase_imp
-```
-
-# ================================================
-
-# PROXY CORS PARA MERCADO PAGO
-
-# ================================================
-
-cors_proxy:
-image: node:18-alpine
-
-```
-restart: unless-stopped
-
-command: >
-  node -e "
-  const http = require('http');
-  const https = require('https');
-
-  http.createServer((req, res) => {
-    // Habilitar CORS.
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, OPTIONS, PUT, PATCH, DELETE'
-    );
-    res.setHeader('Access-Control-Allow-Headers', '*');
-
-    // Responder las solicitudes preflight.
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    // Obtenemos la URL solicitada.
-    let targetUrl = req.url;
-
-    // Caso:
-    // /https:/api.mercadopago.com/...
-    if (
-      targetUrl.startsWith('/https:/') &&
-      !targetUrl.startsWith('/https://')
-    ) {
-      targetUrl = 'https://' + targetUrl.substring(8);
-
-    // Caso:
-    // /https://api.mercadopago.com/...
-    } else if (targetUrl.startsWith('/http')) {
-      targetUrl = targetUrl.substring(1);
-
-    // Si llega una ruta relativa, usamos Mercado Pago.
-    } else if (!targetUrl.startsWith('http')) {
-      targetUrl = 'https://api.mercadopago.com' + req.url;
-    }
-
-    // Elegimos el módulo correcto según el protocolo.
-    const client = targetUrl.startsWith('https://')
-      ? https
-      : http;
-
-    const proxyReq = client.request(
-      targetUrl,
-      {
-        method: req.method,
-        headers: {
-          ...req.headers,
-          host: 'api.mercadopago.com'
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
+          return;
         }
-      },
-      (proxyRes) => {
-        res.writeHead(
-          proxyRes.statusCode,
-          proxyRes.headers
+
+        let targetUrl = req.url;
+
+        if (
+          targetUrl.startsWith('/https:/') &&
+          !targetUrl.startsWith('/https://')
+        ) {
+          targetUrl = 'https://' + targetUrl.substring(8);
+        } else if (targetUrl.startsWith('/http')) {
+          targetUrl = targetUrl.substring(1);
+        } else if (!targetUrl.startsWith('http')) {
+          targetUrl = 'https://api.mercadopago.com' + req.url;
+        }
+
+        const client = targetUrl.startsWith('https://')
+          ? https
+          : http;
+
+        const proxyReq = client.request(
+          targetUrl,
+          {
+            method: req.method,
+            headers: {
+              ...req.headers,
+              host: 'api.mercadopago.com'
+            }
+          },
+          (proxyRes) => {
+            res.writeHead(
+              proxyRes.statusCode,
+              proxyRes.headers
+            );
+            proxyRes.pipe(res);
+          }
         );
 
-        proxyRes.pipe(res);
-      }
-    );
+        proxyReq.on('error', (err) => {
+          console.error(
+            'Error en proxy:',
+            err.message
+          );
+          res.writeHead(500);
+          res.end(err.message);
+        });
 
-    // Manejo de errores.
-    proxyReq.on('error', (err) => {
-      console.error(
-        'Error en proxy:',
-        err.message
+        req.pipe(proxyReq);
+
+      }).listen(
+        8080,
+        '0.0.0.0',
+        () => {
+          console.log(
+            'Proxy CORS corriendo en puerto 8080'
+          );
+        }
       );
-
-      res.writeHead(500);
-      res.end(err.message);
-    });
-
-    // Enviamos el cuerpo de la solicitud.
-    req.pipe(proxyReq);
-
-  }).listen(
-    8080,
-    '0.0.0.0',
-    () => {
-      console.log(
-        'Proxy CORS corriendo en puerto 8080'
-      );
-    }
-  );
-  "
-
-# Acceso desde la red local:
-# http://IP_DEL_SERVIDOR:8080
-ports:
-  - "8080:8080"
-```
-
-# ==================================================
-
-# VOLÚMENES PERSISTENTES
-
-# ==================================================
+      "
+    ports:
+      - "8080:8080"
 
 volumes:
-pocketbase_data:
+  pocketbase_data:
