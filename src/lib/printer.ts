@@ -10,7 +10,18 @@ const PRINTER_ID = import.meta.env.VITE_PRINTER_ID || '';
 const BACKEND_URL = `${import.meta.env.VITE_API_URL || ''}/api/v1`;
 
 // URL de tu contenedor CORS Proxy (definido en docker-compose.yml en el puerto 8080)
-const PROXY_URL = 'http://192.168.18.95:8080/';
+const PROXY_URL = `http://${import.meta.env.VITE_LOCAL_HOST || ''}:${import.meta.env.VITE_LOCAL_PORT || ''}/`;
+
+console.log('PROXY_URL')
+console.log('PROXY_URL')
+console.log('PROXY_URL')
+console.log('PROXY_URL')
+console.log(PROXY_URL)
+
+
+
+
+
 
 // Cliente Axios configurado para apuntar al puerto del Proxy CORS.
 // Le pasamos la URL de destino completa en la petición para que el proxy la intercepte limpiamente.

@@ -12,7 +12,7 @@ services:
   imp:
     build:
       context: .
-      dockerfile: Dockerfile.vue
+      dockerfile: Dockerfile.vue.production
     restart: unless-stopped
     ports:
       - "3535:80"
