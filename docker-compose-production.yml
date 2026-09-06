@@ -24,11 +24,6 @@ services:
       - pocketbase_imp
     networks:
       - coolify
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.imp.rule=Host(`impresora.local`)"
-      - "traefik.http.routers.imp.entrypoints=http"
-      - "traefik.http.services.imp.loadbalancer.server.port=80"
 
   cors_proxy:
     image: node:18-alpine
