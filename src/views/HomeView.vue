@@ -185,7 +185,7 @@ const insertDateTime = () => {
   const horas = String(ahora.getHours()).padStart(2, '0');
   const minutos = String(ahora.getMinutes()).padStart(2, '0');
 
-  const fechaHoraFormateada = `{w}${dia}/${mes}/${anio}-----------${horas}:${minutos}{/w}{br}`;
+  const fechaHoraFormateada = `{w}${dia}/${mes}/${anio}-----------${horas}:${minutos}{/w}{br} prueba desde el new server`;
 
   // Buscamos el textarea para meter la fecha donde esté el cursor posicionado
   const textarea = document.querySelector('textarea');

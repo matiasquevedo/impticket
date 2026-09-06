@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.pb
     restart: unless-stopped
     expose:
-      - "8080"
+      - "8081"
     volumes:
       - pocketbase_data:/pb/pb_data
 
@@ -88,17 +88,17 @@ services:
         req.pipe(proxyReq);
 
       }).listen(
-        8081,
+        8080,
         '0.0.0.0',
         () => {
           console.log(
-            'Proxy CORS corriendo en puerto 8081'
+            'Proxy CORS corriendo en puerto 8080'
           );
         }
       );
       "
     ports:
-      - "8081:8080"
+      - "8080:8080"
 
 volumes:
   pocketbase_data:

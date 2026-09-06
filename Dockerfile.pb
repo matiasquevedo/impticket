@@ -9,7 +9,7 @@ ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/po
 RUN unzip /tmp/pb.zip -d /pb/
 
 # Exponer el puerto por defecto
-EXPOSE 8080
+EXPOSE 8081
 
 # Iniciar PocketBase y asegurar que los datos persistan en /pb/pb_data
-CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
+CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8081"]
