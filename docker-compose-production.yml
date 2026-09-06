@@ -92,13 +92,13 @@ services:
         '0.0.0.0',
         () => {
           console.log(
-            'Proxy CORS corriendo en puerto 8080'
+            'Proxy CORS corriendo en puerto 8086'
           );
         }
       );
       "
     ports:
-      - "8080:8080"
+      - "8086:8080"
 
 volumes:
   pocketbase_data:
