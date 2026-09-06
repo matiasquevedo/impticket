@@ -14,6 +14,8 @@ services:
       context: .
       dockerfile: Dockerfile.vue.production
     restart: unless-stopped
+    expose:
+      - "3535"
     ports:
       - "3535:80"
     depends_on:
