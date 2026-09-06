@@ -24,6 +24,17 @@ services:
       - pocketbase_imp
     networks:
       - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      # Definimos la regla de Host explícita
+      - "traefik.http.routers.imp-http.rule=Host(`impresora.local`)"
+      # Forzamos a que el router use únicamente el entrypoint de HTTP (puerto 80)
+      - "traefik.http.routers.imp-http.entrypoints=http"
+      # Apuntamos al servicio interno en el puerto 80 del contenedor
+      - "traefik.http.services.imp-http.loadbalancer.server.port=80"
+      # Desactivamos explícitamente cualquier TLS/SSL para este router
+      - "traefik.http.routers.imp-http.tls=false"
 
   cors_proxy:
     image: node:18-alpine
