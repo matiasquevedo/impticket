@@ -13,7 +13,10 @@
     </n-message-provider>
   </n-config-provider>
 
-  <LoFiRadio />
+
+
+  <div class="flex justify-center items-center bg-red-200 h-48"> {{base}} </div>
+
 
 
 </template>
@@ -24,6 +27,11 @@ import { RouterView, useRoute } from 'vue-router'
 import { NConfigProvider, NMessageProvider, type GlobalThemeOverrides } from 'naive-ui'
 
 const route = useRoute()
+
+
+const base = `http://${import.meta.env.VITE_LOCAL_HOST || ''}:${import.meta.env.VITE_LOCAL_PORT || ''}/`;
+
+
 
 /**
  * 🎨 SOBREESCRITURA DE TEMAS GLOBAL (Naive UI)
