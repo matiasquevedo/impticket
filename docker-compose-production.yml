@@ -5,9 +5,11 @@ services:
       dockerfile: Dockerfile.pb
     restart: unless-stopped
     expose:
-      - "8081"
+      - "8080"
     volumes:
       - pocketbase_data:/pb/pb_data
+    networks:
+      - coolify
 
   imp:
     build:
@@ -15,11 +17,18 @@ services:
       dockerfile: Dockerfile.vue.production
     restart: unless-stopped
     expose:
-      - "3535"
+      - "80"
     ports:
       - "3535:80"
     depends_on:
       - pocketbase_imp
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.imp.rule=Host(`impresora.local`)"
+      - "traefik.http.routers.imp.entrypoints=http"
+      - "traefik.http.services.imp.loadbalancer.server.port=80"
 
   cors_proxy:
     image: node:18-alpine
@@ -94,13 +103,19 @@ services:
         '0.0.0.0',
         () => {
           console.log(
-            'Proxy CORS corriendo en puerto 8086'
+            'Proxy CORS corriendo en puerto 8080'
           );
         }
       );
       "
     ports:
       - "8086:8080"
+    networks:
+      - coolify
 
 volumes:
   pocketbase_data:
+
+networks:
+  coolify:
+    external: true
