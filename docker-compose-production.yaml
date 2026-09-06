@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.pb
     restart: unless-stopped
     expose:
-      - "6767:8080"
+      - "8080"
     volumes:
       - pocketbase_data:/pb/pb_data
 
